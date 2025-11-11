@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Order Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Hide scrollbars for a cleaner mobile-app look */
+        ::-webkit-scrollbar { display: none;}
+        body { font-family: 'Inter', sans-serif; }
+        /* Keyframe for notification slide-in/out */
+        @keyframes slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes slide-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
+        .slide-in { animation: slide-in 0.3s ease-out forwards; }
+        .slide-out { animation: slide-out 0.3s ease-in forwards; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter min-h-screen">
+    <!-- Header -->
+    <header id="header" class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button class="p-2 -ml-2 text-gray-700 hover:text-gray-900 transition duration-150">
+                        <i class="fa-solid fa-arrow-left text-lg"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Orders</h1>
+                        <p class="text-xs text-gray-500">Manage incoming orders</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button class="relative p-2 text-gray-600 hover:text-gray-900 transition duration-150">
+                        <i class="fa-solid fa-filter text-lg"></i>
+                    </button>
+                    <button id="notification-bell" class="relative p-2 text-gray-600 hover:text-gray-900 transition duration-150">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">5</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filter Tabs -->
+    <section id="filter-tabs-container" class="bg-white border-b border-gray-200 px-4 py-3 sticky top-[72px] z-40 shadow-inner overflow-x-auto whitespace-nowrap">
+        <div id="filter-tabs" class="flex space-x-2 pb-1">
+            <!-- Filter buttons populated by JS -->
+        </div>
+    </section>
+
+    <!-- Orders List -->
+    <main id="orders-main" class="px-4 py-4 mb-20">
+        <section id="orders-list" class="space-y-4">
+            <!-- Order Cards will be dynamically inserted here -->
+        </section>
+        <div id="no-orders-message" class="hidden text-center py-12 text-gray-500">
+            <i class="fa-solid fa-box-open text-4xl mb-3"></i>
+            <p class="text-lg font-medium">No orders found for this status.</p>
+            <p class="text-sm">Try checking another filter or wait for new orders.</p>
+        </div>
+    </main>
+    
+    <!-- Custom Rejection Modal -->
+    <div id="rejection-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-[100] hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl transform transition-transform duration-300 scale-95" id="modal-content">
+            <h3 class="text-xl font-bold text-red-600 mb-3 flex items-center">
+                <i class="fa-solid fa-triangle-exclamation mr-3"></i> Reject Order?
+            </h3>
+            <p class="text-gray-700 mb-6">Are you sure you want to reject <span id="modal-order-id" class="font-bold">#</span>? This action cannot be undone.</p>
+            <div class="flex space-x-3 justify-end">
+                <button id="modal-cancel-btn" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition duration-150">
+                    Cancel
+                </button>
+                <button id="modal-confirm-reject-btn" class="px-5 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition duration-150">
+                    <i class="fa-solid fa-times mr-2"></i> Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container (fixed position) -->
+    <div id="notification-container" class="fixed top-4 right-0 z-[100] pr-4 space-y-2 max-w-xs md:max-w-sm">
+        <!-- Notifications will appear here -->
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
+        <div class="grid grid-cols-4">
+            <button 
+            onclick="window.location.href='index.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none">
+                <i class="fa-solid fa-home text-green-app text-xl mb-1"></i>
+                <span class="text-xs text-green-app font-semibold">Dashboard</span>
+            </button>
+            <button 
+            onclick="window.location.href='storeoder.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-shopping-basket text-xl mb-1"></i>
+                <span class="text-xs">Orders</span>
+            </button>
+            <button onclick="window.location.href='storeinventory.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-box text-xl mb-1"></i>
+                <span class="text-xs">Inventory</span>
+            </button>
+            <button onclick="window.location.href='storeprofile.html'" 
+  class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+  <i class="fa-solid fa-user text-xl mb-1"></i>
+  <span class="text-xs">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // --- Order Data (In-Memory State) ---
+        let ordersData = [
+            { id: 123, time: '2 minutes ago', customer: 'Fatima Rahman', location: 'Dhanmondi, Dhaka', items: 'Rice (2kg), Oil (1L), Salt (1kg)', total: '৳500', status: 'Pending', avatar: 'https://placehold.co/100x100/A3E635/000?text=F' },
+            { id: 124, time: '5 minutes ago', customer: 'Karim Ahmed', location: 'Gulshan, Dhaka', items: 'Flour (5kg), Sugar (2kg), Tea (500g), Milk (1L), Eggs (12pcs)', total: '৳720', status: 'Ready', avatar: 'https://placehold.co/100x100/FACC15/000?text=K' },
+            { id: 125, time: '8 minutes ago', customer: 'Rashida Begum', location: 'Uttara, Dhaka', items: 'Onion (2kg), Potato (3kg), Garlic (500g)', total: '৳320', status: 'Pending', avatar: 'https://placehold.co/100x100/A8A29E/000?text=R' },
+            { id: 126, time: '12 minutes ago', customer: 'Abdul Rahman', location: 'Mirpur, Dhaka', items: 'Chicken (1kg), Fish (500g), Beef (500g)', total: '৳850', status: 'Pending', avatar: 'https://placehold.co/100x100/7C3AED/FFF?text=A' },
+            { id: 127, time: '15 minutes ago', customer: 'Nasreen Akhter', location: 'Wari, Dhaka', items: 'Bread (2pcs), Butter (200g), Jam (1jar)', total: '৳280', status: 'Picked', avatar: 'https://placehold.co/100x100/EC4899/FFF?text=N' },
+            { id: 128, time: '20 minutes ago', customer: 'Jahangir Alam', location: 'Badda, Dhaka', items: 'Water (12 bottles), Soft Drink (6 cans)', total: '৳450', status: 'Ready', avatar: 'https://placehold.co/100x100/06B6D4/FFF?text=J' },
+            { id: 129, time: '25 minutes ago', customer: 'Shapla Khatun', location: 'Mohakhali, Dhaka', items: 'Detergent (1kg), Soap (4 bars), Shampoo', total: '৳600', status: 'Rejected', avatar: 'https://placehold.co/100x100/F43F5E/FFF?text=S' },
+            { id: 130, time: '30 minutes ago', customer: 'Tofazzal Hossain', location: 'Malibagh, Dhaka', items: 'Coffee (250g), Sugar (1kg)', total: '৳350', status: 'Pending', avatar: 'https://placehold.co/100x100/22C55E/FFF?text=T' },
+        ];
+        
+        // Use an object to map status to necessary data (colors, actions, etc.)
+        const STATUS_MAP = {
+            'Pending': { badge: 'bg-yellow-100 text-yellow-800', actions: 'Pending' },
+            'Ready': { badge: 'bg-blue-100 text-blue-800', actions: 'Ready' },
+            'Picked': { badge: 'bg-green-100 text-green-800', actions: 'Picked' },
+            'Rejected': { badge: 'bg-red-100 text-red-800', actions: 'Rejected' },
+            'Notified': { badge: 'bg-indigo-100 text-indigo-800', actions: 'Ready' }
+        };
+
+        let currentFilter = 'All';
+        let pendingRejectionId = null;
+
+        // --- Utility Functions ---
+
+        /**
+         * Shows a transient notification message.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of notification ('success', 'error', 'info').
+         */
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            
+            let bgColor = 'bg-green-600';
+            let icon = 'fa-check-circle';
+            
+            if (type === 'error') {
+                bgColor = 'bg-red-600';
+                icon = 'fa-circle-xmark';
+            } else if (type === 'info') {
+                bgColor = 'bg-blue-600';
+                icon = 'fa-circle-info';
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `p-4 ${bgColor} text-white rounded-xl shadow-xl z-50 transform translate-x-full transition-transform opacity-0 flex items-center space-x-3`;
+            notification.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full', 'opacity-0');
+                notification.classList.add('slide-in');
+            }, 50);
+            
+            // Animate out and remove
+            setTimeout(() => {
+                notification.classList.remove('slide-in');
+                notification.classList.add('slide-out');
+                notification.addEventListener('animationend', () => notification.remove());
+            }, 3000);
+        }
+
+        /**
+         * Generates the HTML for the action buttons based on the order status.
+         * @param {number} orderId - The ID of the order.
+         * @param {string} status - The current status of the order.
+         * @returns {string} - The HTML string for the buttons.
+         */
+        function getActionButtonsHTML(orderId, status) {
+            const id = `data-order-id="${orderId}"`;
+            
+            switch (status) {
+                case 'Pending':
+                    return `
+                        <button ${id} class="accept-btn flex-1 bg-green-600 text-white py-2 px-4 rounded-xl text-sm font-medium hover:bg-green-700 transition duration-150">
+                            <i class="fa-solid fa-check mr-2"></i>Accept
+                        </button>
+                        <button ${id} class="reject-trigger-btn bg-red-100 text-red-600 py-2 px-4 rounded-xl text-sm font-medium hover:bg-red-200 transition duration-150">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    `;
+                case 'Ready':
+                    return `
+                        <button ${id} class="notify-btn flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl text-sm font-medium hover:bg-blue-700 transition duration-150">
+                            <i class="fa-solid fa-bell mr-2"></i>Notify Customer
+                        </button>
+                        <button class="bg-gray-100 text-gray-600 py-2 px-4 rounded-xl text-sm font-medium hover:bg-gray-200 transition duration-150">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    `;
+                case 'Notified':
+                    return `
+                        <button ${id} disabled class="flex-1 bg-indigo-100 text-indigo-700 py-2 px-4 rounded-xl text-sm font-medium cursor-default">
+                            <i class="fa-solid fa-check mr-2"></i>Customer Notified
+                        </button>
+                        <button class="bg-gray-100 text-gray-600 py-2 px-4 rounded-xl text-sm font-medium hover:bg-gray-200 transition duration-150">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    `;
+                case 'Picked':
+                    return `
+                        <div class="bg-green-50 border border-green-200 rounded-xl p-3 w-full">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-truck text-green-600"></i>
+                                <span class="text-sm text-green-700 font-medium">Out for delivery</span>
+                            </div>
+                        </div>
+                    `;
+                case 'Rejected':
+                    return `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-3 w-full">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-trash-can text-red-600"></i>
+                                <span class="text-sm text-red-700 font-medium">Order Rejected</span>
+                            </div>
+                        </div>
+                    `;
+                default:
+                    return '';
+            }
+        }
+        
+        /**
+         * Generates the HTML for a single order card.
+         * @param {Object} order - The order data object.
+         * @returns {string} - The complete HTML string for the order card.
+         */
+        function createOrderCardHTML(order) {
+            const statusInfo = STATUS_MAP[order.status] || STATUS_MAP['Pending'];
+            const displayStatus = order.status === 'Notified' ? 'Ready' : order.status; // Show 'Ready' on the badge even if it's 'Notified' internally
+            
+            return `
+                <div class="order-card bg-white rounded-2xl p-5 shadow-lg border border-gray-100 transition-all duration-300" data-order-id="${order.id}" data-status="${order.status}">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-bold text-gray-700">#${order.id}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">Order #${order.id}</h4>
+                                <p class="text-xs text-gray-500">${order.time}</p>
+                            </div>
+                        </div>
+                        <span class="status ${statusInfo.badge} text-xs font-medium px-3 py-1 rounded-full">${displayStatus}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <img src="${order.avatar}" alt="Customer" onerror="this.onerror=null;this.src='https://placehold.co/48x48/6B7280/FFF?text=?';" class="w-8 h-8 rounded-full">
+                            <div>
+                                <p class="font-medium text-gray-900">${order.customer}</p>
+                                <p class="text-xs text-gray-500">${order.location}</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3 mt-3 border border-gray-100">
+                            <p class="text-sm text-gray-700 mb-1 line-clamp-2" title="${order.items}">Items: ${order.items}</p>
+                            <p class="text-xl font-extrabold text-gray-900">${order.total}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2" id="actions-${order.id}">
+                        ${getActionButtonsHTML(order.id, order.status)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Renders the order list and updates the filter tabs.
+         */
+        function renderOrders() {
+            const ordersList = document.getElementById('orders-list');
+            const noOrdersMessage = document.getElementById('no-orders-message');
+            const filterCounts = { 'All': 0 };
+
+            // 1. Calculate counts for filter tabs
+            ordersData.forEach(order => {
+                const status = order.status;
+                filterCounts['All']++;
+                filterCounts[status] = (filterCounts[status] || 0) + 1;
+            });
+            
+            // 2. Generate Filter Tabs
+            const statusOrder = ['All', 'Pending', 'Ready', 'Picked', 'Rejected'];
+            const filterTabsContainer = document.getElementById('filter-tabs');
+            filterTabsContainer.innerHTML = '';
+            
+            statusOrder.forEach(status => {
+                if (status === 'Notified') return; // Skip internal status
+                const count = filterCounts[status] || 0;
+                const isActive = currentFilter === status;
+                const buttonClass = isActive 
+                    ? 'px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-full shadow-md'
+                    : 'px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-full hover:bg-gray-200 transition duration-150';
+                
+                const button = document.createElement('button');
+                button.className = buttonClass;
+                button.textContent = `${status} (${count})`;
+                button.setAttribute('data-filter', status);
+                filterTabsContainer.appendChild(button);
+            });
+            
+            // 3. Filter and Render Orders
+            let filteredOrders = ordersData.filter(order => 
+                currentFilter === 'All' || order.status === currentFilter || 
+                (currentFilter === 'Ready' && order.status === 'Notified')
+            ).sort((a, b) => b.id - a.id); // Sort descending by ID (newest first)
+
+            ordersList.innerHTML = filteredOrders.map(createOrderCardHTML).join('');
+            
+            // Show/hide no orders message
+            if (filteredOrders.length === 0) {
+                noOrdersMessage.classList.remove('hidden');
+            } else {
+                noOrdersMessage.classList.add('hidden');
+            }
+            
+            // 4. Re-attach Event Listeners
+            attachEventListeners();
+        }
+
+        /**
+         * Handles the update of an order's status and re-renders the list.
+         * @param {number} orderId - The ID of the order to update.
+         * @param {string} newStatus - The new status to apply.
+         */
+        function updateOrderStatus(orderId, newStatus) {
+            const orderIndex = ordersData.findIndex(o => o.id === orderId);
+            if (orderIndex !== -1) {
+                ordersData[orderIndex].status = newStatus;
+                
+                // If moving from a status, update the filter to 'All' to show the change immediately, 
+                // unless the new status matches the current filter
+                if (currentFilter !== 'All' && currentFilter !== newStatus) {
+                   currentFilter = 'All';
+                }
+
+                // If the new status is 'Pending', we increment the notification badge (simulated)
+                if (newStatus === 'Pending') {
+                    const badge = document.getElementById('notification-badge');
+                    badge.textContent = parseInt(badge.textContent) + 1;
+                }
+                
+                renderOrders();
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Attaches all dynamic event listeners to the order list container.
+         */
+        function attachEventListeners() {
+            // Event delegation for order actions (Accept, Reject, Notify)
+            document.getElementById('orders-list').addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+
+                const orderId = parseInt(button.getAttribute('data-order-id'));
+                if (isNaN(orderId)) return;
+
+                // --- Accept Action ---
+                if (button.classList.contains('accept-btn')) {
+                    if (updateOrderStatus(orderId, 'Ready')) {
+                        showNotification(`Order #${orderId} accepted and is now ready for packaging.`, 'success');
+                    }
+
+                // --- Notify Action ---
+                } else if (button.classList.contains('notify-btn')) {
+                    if (updateOrderStatus(orderId, 'Notified')) {
+                        showNotification(`Customer for Order #${orderId} has been notified.`, 'info');
+                    }
+                
+                // --- Reject Action (Trigger Modal) ---
+                } else if (button.classList.contains('reject-trigger-btn')) {
+                    pendingRejectionId = orderId;
+                    document.getElementById('modal-order-id').textContent = `#${orderId}`;
+                    document.getElementById('rejection-modal').classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+                }
+            });
+
+            // Event delegation for Filter Tabs
+            document.getElementById('filter-tabs').addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+
+                const newFilter = button.getAttribute('data-filter');
+                if (newFilter) {
+                    currentFilter = newFilter;
+                    renderOrders();
+                }
+            });
+        }
+        
+        /**
+         * Initializes the custom rejection modal listeners.
+         */
+        function setupModalListeners() {
+            const modal = document.getElementById('rejection-modal');
+            const confirmBtn = document.getElementById('modal-confirm-reject-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+            const modalContent = document.getElementById('modal-content');
+
+            const closeModal = () => {
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-95');
+                modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('opacity-0');
+                    document.body.classList.remove('overflow-hidden');
+                }, 300); // Match transition duration
+                pendingRejectionId = null;
+            };
+
+            const openModal = () => {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95');
+                    modalContent.classList.add('scale-100');
+                    modal.classList.remove('opacity-0');
+                }, 50);
+            };
+
+            // Setup listeners
+            cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                if (pendingRejectionId !== null) {
+                    if (updateOrderStatus(pendingRejectionId, 'Rejected')) {
+                        showNotification(`Order #${pendingRejectionId} has been rejected.`, 'error');
+                    }
+                }
+                closeModal();
+            });
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            document.body.style.paddingBottom = '80px'; // Space for bottom navigation
+            setupModalListeners();
+            renderOrders();
+
+            // Simulate new order arrival periodically
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    const newId = Math.max(...ordersData.map(o => o.id)) + 1;
+                    ordersData.push({
+                        id: newId,
+                        time: 'Just now',
+                        customer: 'New Customer',
+                        location: 'New Town, Dhaka',
+                        items: 'Fresh Vegetables (1 set)',
+                        total: '৳400',
+                        status: 'Pending',
+                        avatar: `https://placehold.co/100x100/3B82F6/FFF?text=N${newId}`
+                    });
+                    
+                    const badge = document.getElementById('notification-badge');
+                    badge.textContent = parseInt(badge.textContent) + 1;
+                    
+                    if (currentFilter === 'All' || currentFilter === 'Pending') {
+                        renderOrders();
+                    }
+                    
+                    showNotification('New order received! Check Pending tab.', 'info');
+                }
+            }, 30000); // New order every 30 seconds simulation
+        };
+    </script>
+</body>
+</html>

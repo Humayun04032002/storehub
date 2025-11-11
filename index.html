@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroceryHub Store Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Font Awesome Icons -->
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Hide scrollbar for a cleaner mobile look */
+        ::-webkit-scrollbar { display: none;}
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'green-app': '#10b981', /* Use a consistent green for primary actions */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter min-h-screen">
+    <!-- Header -->
+    <header id="header" class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-green-app rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fa-solid fa-store text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900">GroceryHub</h1>
+                        <p class="text-xs text-gray-500">Store Dashboard</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="notification-btn" class="relative p-2 hover:bg-gray-100 rounded-full transition duration-150">
+                        <i class="fa-solid fa-bell text-gray-600 text-lg"></i>
+                        <span id="notification-count" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">3</span>
+                    </button>
+                    <img src="https://placehold.co/40x40/10b981/ffffff?text=A" alt="Profile" class="w-10 h-10 rounded-full ring-2 ring-green-app/50 shadow-md">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main id="dashboard-main" class="px-4 py-6">
+        <!-- Welcome Section -->
+        <section id="welcome-section" class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Good Morning, Ahmed!</h2>
+            <p class="text-gray-600">Here's your store overview for today.</p>
+        </section>
+
+        <!-- Summary Cards (Mobile Grid) -->
+        <section id="summary-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <!-- Card 1: Total Orders -->
+            <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Total Orders</p>
+                        <p id="total-orders-display" class="text-3xl font-extrabold text-gray-900">12</p>
+                        <p class="text-xs text-green-600 mt-1 flex items-center">
+                            <i class="fa-solid fa-arrow-up mr-1 text-xs"></i>+8% from yesterday
+                        </p>
+                    </div>
+                    <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-shopping-cart text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Revenue Today -->
+            <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Revenue Today</p>
+                        <p class="text-3xl font-extrabold text-gray-900">৳5,400</p>
+                        <p class="text-xs text-green-600 mt-1 flex items-center">
+                            <i class="fa-solid fa-arrow-up mr-1 text-xs"></i>+12% from yesterday
+                        </p>
+                    </div>
+                    <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-bangladeshi-taka-sign text-green-app text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Stock Alerts -->
+            <div class="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600 mb-1">Stock Alerts</p>
+                        <p class="text-3xl font-extrabold text-red-600">3</p>
+                        <p class="text-xs text-red-600 mt-1 flex items-center">
+                            <i class="fa-solid fa-exclamation-triangle mr-1 text-xs"></i>Items running low
+                        </p>
+                    </div>
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-box-open text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pending Orders Section -->
+        <section id="pending-orders-section" class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Pending Orders</h3>
+                <button class="text-green-app text-sm font-medium hover:text-green-700 transition duration-150">View All</button>
+            </div>
+
+            <div id="orders-list" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <!-- Order Item 1 -->
+                <div class="order-item p-4 hover:bg-gray-50 transition duration-150 border-b border-gray-100">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-sm font-semibold text-gray-700">#001</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-900">Fatima Rahman</p>
+                                <p class="text-xs text-gray-500">2 items • ৳450</p>
+                            </div>
+                        </div>
+                        <span class="status-badge bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full flex-shrink-0">Pending</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-gray-500">Ordered 5 min ago</p>
+                        <button data-order-id="1" data-status="pending" class="action-btn bg-green-app text-white text-sm px-4 py-1.5 rounded-full hover:bg-green-700 transition duration-150 shadow-md">Accept</button>
+                    </div>
+                </div>
+
+                <!-- Order Item 2 -->
+                <div class="order-item p-4 hover:bg-gray-50 transition duration-150 border-b border-gray-100">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-sm font-semibold text-gray-700">#002</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-900">Karim Ahmed</p>
+                                <p class="text-xs text-gray-500">5 items • ৳720</p>
+                            </div>
+                        </div>
+                        <span class="status-badge bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1 rounded-full flex-shrink-0">Ready</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-gray-500">Ordered 15 min ago</p>
+                        <button data-order-id="2" data-status="ready" class="action-btn bg-blue-600 text-white text-sm px-4 py-1.5 rounded-full hover:bg-blue-700 transition duration-150 shadow-md">Notify</button>
+                    </div>
+                </div>
+
+                <!-- Order Item 3 -->
+                <div class="order-item p-4 hover:bg-gray-50 transition duration-150">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-sm font-semibold text-gray-700">#003</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-900">Rashida Begum</p>
+                                <p class="text-xs text-gray-500">3 items • ৳320</p>
+                            </div>
+                        </div>
+                        <span class="status-badge bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full flex-shrink-0">Pending</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-gray-500">Ordered 25 min ago</p>
+                        <button data-order-id="3" data-status="pending" class="action-btn bg-green-app text-white text-sm px-4 py-1.5 rounded-full hover:bg-green-700 transition duration-150 shadow-md">Accept</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section id="quick-actions" class="mb-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Action 1: Add Product -->
+                <button class="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 flex flex-col items-center space-y-3 hover:shadow-xl transition duration-300 active:scale-[0.98]">
+                    <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-plus text-purple-600 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700">Add Product</span>
+                </button>
+
+                <!-- Action 2: View Reports -->
+                <button class="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 flex flex-col items-center space-y-3 hover:shadow-xl transition duration-300 active:scale-[0.98]">
+                    <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-orange-600 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-700">View Reports</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
+        <div class="grid grid-cols-4">
+            <button 
+            onclick="window.location.href='index.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none">
+                <i class="fa-solid fa-home text-green-app text-xl mb-1"></i>
+                <span class="text-xs text-green-app font-semibold">Dashboard</span>
+            </button>
+            <button 
+            onclick="window.location.href='storeoder.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-shopping-basket text-xl mb-1"></i>
+                <span class="text-xs">Orders</span>
+            </button>
+            <button onclick="window.location.href='storeinventory.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-box text-xl mb-1"></i>
+                <span class="text-xs">Inventory</span>
+            </button>
+            <button onclick="window.location.href='storeprofile.html'" 
+  class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+  <i class="fa-solid fa-user text-xl mb-1"></i>
+  <span class="text-xs">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Global Message Box (used instead of alert/confirm) -->
+    <div id="message-box" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-[999]">
+        <div id="message-content" class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-11/12 transform scale-90 transition-all duration-300">
+            <h4 id="message-title" class="text-lg font-bold mb-3 text-gray-900"></h4>
+            <p id="message-text" class="text-gray-600 mb-4"></p>
+            <button id="message-close-btn" class="w-full bg-green-app text-white py-2 rounded-lg font-medium hover:bg-green-700 transition">OK</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Adjust body padding to accommodate the fixed bottom nav
+            document.body.style.paddingBottom = '80px';
+
+            const totalOrdersDisplay = document.getElementById('total-orders-display');
+            const ordersList = document.getElementById('orders-list');
+            const messageBox = document.getElementById('message-box');
+            const messageTitle = document.getElementById('message-title');
+            const messageText = document.getElementById('message-text');
+            const messageCloseBtn = document.getElementById('message-close-btn');
+
+            // --- Utility Functions ---
+
+            // Custom non-blocking message box replacement for alert()
+            function showCustomMessage(title, message) {
+                messageTitle.textContent = title;
+                messageText.textContent = message;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('flex');
+                document.getElementById('message-content').classList.remove('scale-90');
+                document.getElementById('message-content').classList.add('scale-100');
+            }
+
+            messageCloseBtn.addEventListener('click', () => {
+                document.getElementById('message-content').classList.remove('scale-100');
+                document.getElementById('message-content').classList.add('scale-90');
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                    messageBox.classList.remove('flex');
+                }, 300);
+            });
+
+            // --- Real-time Simulation Logic ---
+
+            let currentOrderCount = parseInt(totalOrdersDisplay.textContent);
+            let nextOrderId = 4;
+
+            function simulateNewOrder() {
+                // Generate a new, random order
+                const customers = ["Samiya Akter", "Rana Hossain", "Tanjim Islam", "Nayeem Khan"];
+                const items = Math.floor(Math.random() * 5) + 1;
+                const price = Math.floor(Math.random() * 500) + 200;
+                const minutesAgo = Math.floor(Math.random() * 10) + 1;
+                const customerName = customers[Math.floor(Math.random() * customers.length)];
+                const orderId = nextOrderId++;
+
+                const newOrderHTML = `
+                    <div class="order-item p-4 hover:bg-gray-50 transition duration-150 border-b border-gray-100" data-id="${orderId}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span class="text-sm font-semibold text-gray-700">#00${orderId}</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-900">${customerName}</p>
+                                    <p class="text-xs text-gray-500">${items} items • ৳${price}</p>
+                                </div>
+                            </div>
+                            <span class="status-badge bg-yellow-100 text-yellow-800 text-xs font-medium px-3 py-1 rounded-full flex-shrink-0">Pending</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs text-gray-500">Ordered ${minutesAgo} min ago</p>
+                            <button data-order-id="${orderId}" data-status="pending" class="action-btn bg-green-app text-white text-sm px-4 py-1.5 rounded-full hover:bg-green-700 transition duration-150 shadow-md">Accept</button>
+                        </div>
+                    </div>
+                `;
+
+                // Prepend the new order to the list
+                ordersList.insertAdjacentHTML('afterbegin', newOrderHTML);
+
+                // Update summary card
+                currentOrderCount++;
+                totalOrdersDisplay.textContent = currentOrderCount;
+
+                // Show notification in the top right
+                showToast('New order #00' + orderId + ' received from ' + customerName + '!');
+
+                // Re-attach event listeners since a new element was added
+                attachOrderEventListeners();
+            }
+
+            function showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-20 right-4 bg-green-app text-white px-4 py-2 rounded-lg shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-out';
+                toast.textContent = message;
+
+                document.body.appendChild(toast);
+
+                // Animate in
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-full');
+                }, 50);
+
+                // Animate out and remove
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000); // Display for 4 seconds
+            }
+
+            // Randomly trigger a new order every 10 to 20 seconds
+            function startOrderSimulation() {
+                const delay = Math.random() * 10000 + 10000; // 10 to 20 seconds
+                if (Math.random() > 0.5) { // 50% chance to generate a new order
+                    simulateNewOrder();
+                }
+                setTimeout(startOrderSimulation, delay);
+            }
+
+            // Initialize simulation
+            startOrderSimulation();
+
+
+            // --- Order Action Handlers ---
+
+            function handleOrderAction(event) {
+                const button = event.target;
+                if (!button.classList.contains('action-btn')) return;
+
+                const orderId = button.dataset.orderId;
+                const currentStatus = button.dataset.status;
+                const orderItem = button.closest('.order-item');
+                const statusBadge = orderItem.querySelector('.status-badge');
+
+                if (currentStatus === 'pending') {
+                    // Action: Accept
+                    button.textContent = 'Preparing';
+                    button.dataset.status = 'preparing';
+                    button.classList.remove('bg-green-app', 'hover:bg-green-700');
+                    button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+
+                    statusBadge.textContent = 'Preparing';
+                    statusBadge.classList.remove('bg-yellow-100', 'text-yellow-800');
+                    statusBadge.classList.add('bg-orange-100', 'text-orange-800');
+
+                    showCustomMessage("Order Accepted", `Order #${orderId} has been accepted and is now being prepared.`);
+
+                } else if (currentStatus === 'preparing') {
+                    // Action: Mark as Ready
+                    button.textContent = 'Notify';
+                    button.dataset.status = 'ready';
+                    button.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
+                    statusBadge.textContent = 'Ready';
+                    statusBadge.classList.remove('bg-orange-100', 'text-orange-800');
+                    statusBadge.classList.add('bg-blue-100', 'text-blue-800');
+
+                    showCustomMessage("Order Ready", `Order #${orderId} is ready for pickup/delivery. Notification sent to customer.`);
+
+                } else if (currentStatus === 'ready') {
+                    // Action: Notify (assuming this means final delivery/completion)
+                    button.textContent = 'Completed';
+                    button.dataset.status = 'completed';
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    button.classList.add('bg-gray-200', 'text-gray-600', 'cursor-not-allowed', 'shadow-none');
+                    button.disabled = true;
+
+                    statusBadge.textContent = 'Completed';
+                    statusBadge.classList.remove('bg-blue-100', 'text-blue-800');
+                    statusBadge.classList.add('bg-green-100', 'text-green-800');
+
+                    showCustomMessage("Order Completed", `Order #${orderId} marked as completed.`);
+                }
+            }
+
+            function attachOrderEventListeners() {
+                document.querySelectorAll('.action-btn').forEach(button => {
+                    // Ensure we don't double-attach listeners
+                    button.removeEventListener('click', handleOrderAction);
+                    button.addEventListener('click', handleOrderAction);
+                });
+            }
+
+            attachOrderEventListeners();
+        });
+    </script>
+</body>
+</html>

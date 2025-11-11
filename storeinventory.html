@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Font Awesome Icons -->
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { display: none;}
+        body { font-family: 'Inter', sans-serif; }
+        /* Styling for the fly-in notification */
+        .notification {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-out;
+            transform: translateY(100%);
+        }
+        .modal-content.show {
+            transform: translateY(0);
+        }
+        /* Custom modal animation */
+        #product-modal.hidden .modal-content {
+            transform: translateY(100%);
+        }
+        #product-modal:not(.hidden) .modal-content {
+            transform: translateY(0);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter">
+
+    <!-- Header -->
+    <header id="header" class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button class="p-2 -ml-2 text-gray-700 text-lg">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-semibold text-gray-900">Product Management</h1>
+                        <p class="text-xs text-gray-500">Manage your inventory</p>
+                    </div>
+                </div>
+                <button id="add-product-btn" class="bg-green-600 hover:bg-green-700 transition text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md">
+                    <i class="fa-solid fa-plus mr-2"></i>Add
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search and Filter Bar -->
+    <section id="search-filter" class="bg-white border-b border-gray-200 px-4 py-3 sticky top-20 z-30">
+        <div class="relative">
+            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="search-input" placeholder="Search products..." class="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-600">
+        </div>
+        <div id="filter-buttons" class="flex space-x-2 mt-3 overflow-x-auto pb-2">
+            <!-- Filter buttons are dynamically managed by JS -->
+            <button data-filter="all" class="filter-btn px-4 py-2 bg-green-600 text-white text-xs font-medium rounded-full whitespace-nowrap shadow-sm">All</button>
+            <button data-filter="in_stock" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-full whitespace-nowrap">In Stock</button>
+            <button data-filter="low_stock" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-full whitespace-nowrap">Low Stock</button>
+            <button data-filter="out_of_stock" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-full whitespace-nowrap">Out of Stock</button>
+        </div>
+    </section>
+
+    <!-- Main Content - Product List -->
+    <main id="products-main" class="px-4 py-4">
+        <section id="products-list" class="space-y-3">
+            <!-- Product cards will be injected here by JavaScript -->
+        </section>
+        <div id="no-products" class="hidden text-center py-10 text-gray-500">
+            <i class="fa-solid fa-box-open text-3xl mb-3"></i>
+            <p class="text-lg font-medium">No products found.</p>
+            <p class="text-sm">Try adjusting your search or add a new product.</p>
+        </div>
+    </main>
+
+    <!-- Floating Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+        <!-- Notifications will be appended here -->
+    </div>
+
+    <!-- Product Add/Edit Modal (Bottom Sheet Style) -->
+    <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden transition-opacity duration-300">
+        <div class="modal-content absolute inset-x-0 bottom-0 bg-white rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="modal-title" class="text-xl font-bold text-gray-900">Add Product</h2>
+                <button id="close-modal" class="p-2 text-gray-500 hover:text-gray-900 transition">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="product-form" class="space-y-4">
+                <input type="hidden" id="product-id">
+
+                <!-- Image Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+                    <div class="relative">
+                        <input type="file" id="product-image" accept="image/*" class="hidden">
+                        <label for="product-image" class="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-green-600 transition" aria-label="Upload Product Image">
+                            <div id="image-preview" class="text-center w-full h-full flex items-center justify-center">
+                                <div class="p-4">
+                                    <i class="fa-solid fa-cloud-upload text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-500">Tap to upload image</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Product Name -->
+                <div>
+                    <label for="product-name" class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                    <input type="text" id="product-name" placeholder="Enter product name" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-600 border border-gray-200" required>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="product-description" class="block text-sm font-medium text-gray-700 mb-2">Description / Unit</label>
+                    <input type="text" id="product-description" placeholder="e.g., 5kg bag, 1 liter" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-600 border border-gray-200">
+                </div>
+
+                <!-- Price and Stock -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="product-price" class="block text-sm font-medium text-gray-700 mb-2">Price (৳)</label>
+                        <input type="number" id="product-price" placeholder="0" min="0" step="0.01" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-600 border border-gray-200" required>
+                    </div>
+                    <div>
+                        <label for="product-stock" class="block text-sm font-medium text-gray-700 mb-2">Stock (units)</label>
+                        <input type="number" id="product-stock" placeholder="0" min="0" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-600 border border-gray-200" required>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" id="cancel-btn" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-200 transition">Cancel</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition shadow-md">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden transition-opacity duration-300 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 m-4 w-11/12 max-w-sm shadow-2xl scale-95 transition-transform duration-300">
+            <h3 class="text-lg font-bold text-red-600 mb-3">Delete Confirmation</h3>
+            <p class="text-gray-700 mb-6">Are you sure you want to delete <strong id="confirm-product-name">this product</strong>? This action cannot be undone.</p>
+            <div class="flex justify-end space-x-3">
+                <button id="confirm-cancel-btn" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition">Cancel</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
+        <div class="grid grid-cols-4">
+            <button 
+            onclick="window.location.href='index.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none">
+                <i class="fa-solid fa-home text-green-app text-xl mb-1"></i>
+                <span class="text-xs text-green-app font-semibold">Dashboard</span>
+            </button>
+            <button 
+            onclick="window.location.href='storeoder.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-shopping-basket text-xl mb-1"></i>
+                <span class="text-xs">Orders</span>
+            </button>
+            <button onclick="window.location.href='storeinventory.html'"
+            class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+                <i class="fa-solid fa-box text-xl mb-1"></i>
+                <span class="text-xs">Inventory</span>
+            </button>
+            <button onclick="window.location.href='storeprofile.html'" 
+  class="flex flex-col items-center py-2 px-3 focus:outline-none text-gray-400 hover:text-green-app transition duration-150">
+  <i class="fa-solid fa-user text-xl mb-1"></i>
+  <span class="text-xs">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.body.style.paddingBottom = '80px';
+        
+        // --- IN-MEMORY DATA STORE & INITIALIZATION ---
+        
+        let products = [
+            { id: 1, name: 'Basmati Rice', description: '5kg bag', price: 450.00, stock: 45, imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200' },
+            { id: 2, name: 'Cooking Oil', description: '1 liter bottle', price: 180.50, stock: 32, imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200' },
+            { id: 3, name: 'Sugar (Low Stock)', description: '1kg pack', price: 85.00, stock: 5, imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=200' }, // Low stock
+            { id: 4, name: 'Salt', description: '1kg pack', price: 35.00, stock: 60, imageUrl: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=200' },
+            { id: 5, name: 'Eggs (Out of Stock)', description: '12 pieces', price: 140.00, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1587486937004-74d0afb1d7c8?w=200' }, // Out of stock
+        ];
+        
+        let nextProductId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        let currentFilter = 'all';
+
+        // --- DOM Elements ---
+        const productsList = document.getElementById('products-list');
+        const noProductsMessage = document.getElementById('no-products');
+        const searchInput = document.getElementById('search-input');
+        const filterButtons = document.getElementById('filter-buttons');
+        
+        // Modals
+        const productModal = document.getElementById('product-modal');
+        const addBtn = document.getElementById('add-product-btn');
+        const closeModal = document.getElementById('close-modal');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const productForm = document.getElementById('product-form');
+        const modalTitle = document.getElementById('modal-title');
+        
+        // Form Fields
+        const productIdInput = document.getElementById('product-id');
+        const nameInput = document.getElementById('product-name');
+        const descriptionInput = document.getElementById('product-description');
+        const priceInput = document.getElementById('product-price');
+        const stockInput = document.getElementById('product-stock');
+        const imageInput = document.getElementById('product-image');
+        const imagePreview = document.getElementById('image-preview');
+
+        // Delete Confirmation Modal
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmProductName = document.getElementById('confirm-product-name');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        
+        let productToDelete = null;
+
+        // --- UTILITY FUNCTIONS ---
+
+        // Custom notification system (replaces alert/confirm)
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const color = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            const notification = document.createElement('div');
+            
+            notification.className = `notification ${color} text-white px-4 py-3 rounded-xl shadow-lg mt-2 text-sm pointer-events-auto`;
+            notification.textContent = message;
+            
+            container.appendChild(notification);
+            
+            // Show animation
+            setTimeout(() => notification.classList.add('show'), 10);
+            
+            // Hide and remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Resets the image preview to default state
+        function resetImagePreview() {
+            imagePreview.innerHTML = `
+                <div class="p-4">
+                    <i class="fa-solid fa-cloud-upload text-3xl text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-500">Tap to upload image</p>
+                </div>
+            `;
+            imagePreview.style.backgroundImage = 'none';
+            imagePreview.style.backgroundSize = 'cover';
+        }
+
+        // Populates the image preview with either a URL or a Base64 string
+        function populateImagePreview(src) {
+            imagePreview.innerHTML = '';
+            imagePreview.style.backgroundImage = `url('${src}')`;
+            imagePreview.style.backgroundSize = 'cover';
+            imagePreview.style.backgroundPosition = 'center';
+            imagePreview.classList.add('rounded-xl', 'overflow-hidden');
+        }
+
+        // Renders a single product card
+        function createProductCard(product) {
+            const lowStockThreshold = 10;
+            const isLowStock = product.stock > 0 && product.stock <= lowStockThreshold;
+            const isOutOfStock = product.stock === 0;
+
+            let stockText;
+            let stockClasses;
+
+            if (isOutOfStock) {
+                stockText = `Stock: ${product.stock} units (Out)`;
+                stockClasses = 'text-red-600 font-medium';
+            } else if (isLowStock) {
+                stockText = `Stock: ${product.stock} units (Low)`;
+                stockClasses = 'text-yellow-600 font-medium';
+            } else {
+                stockText = `Stock: ${product.stock} units`;
+                stockClasses = 'text-gray-500';
+            }
+
+            const card = document.createElement('div');
+            card.className = 'product-card bg-white rounded-2xl p-4 shadow-md border border-gray-100 transition duration-150 hover:shadow-lg';
+            card.dataset.productId = product.id;
+            card.dataset.stockStatus = isOutOfStock ? 'out_of_stock' : (isLowStock ? 'low_stock' : 'in_stock');
+
+            card.innerHTML = `
+                <div class="flex space-x-4">
+                    <div class="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src="${product.imageUrl || 'https://placehold.co/80x80/e5e7eb/7b7b7b?text=No+Image'}" 
+                             onerror="this.onerror=null;this.src='https://placehold.co/80x80/e5e7eb/7b7b7b?text=No+Image';"
+                             alt="${product.name}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-semibold text-gray-900 mb-1 truncate">${product.name}</h4>
+                        <p class="text-sm text-gray-500 mb-2 truncate">${product.description || 'N/A'}</p>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-lg font-bold text-green-600">৳${product.price.toFixed(2)}</p>
+                                <p class="text-xs ${stockClasses}">${stockText}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="edit-btn p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition" data-product-id="${product.id}" aria-label="Edit Product">
+                                    <i class="fa-solid fa-pen text-sm"></i>
+                                </button>
+                                <button class="delete-btn p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" data-product-id="${product.id}" aria-label="Delete Product">
+                                    <i class="fa-solid fa-trash text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Attach event listeners to the new card
+            card.querySelector('.edit-btn').addEventListener('click', handleEditClick);
+            card.querySelector('.delete-btn').addEventListener('click', handleDeleteClick);
+
+            return card;
+        }
+
+        // Renders the entire product list based on the current filter and search term
+        function renderProductList() {
+            productsList.innerHTML = '';
+            const searchTerm = searchInput.value.toLowerCase();
+
+            // 1. Filtering Logic
+            const filteredProducts = products.filter(product => {
+                const nameMatch = product.name.toLowerCase().includes(searchTerm);
+                if (!nameMatch) return false;
+
+                const stock = product.stock;
+                const lowStockThreshold = 10;
+
+                switch (currentFilter) {
+                    case 'in_stock':
+                        return stock > lowStockThreshold;
+                    case 'low_stock':
+                        return stock > 0 && stock <= lowStockThreshold;
+                    case 'out_of_stock':
+                        return stock === 0;
+                    case 'all':
+                    default:
+                        return true;
+                }
+            });
+
+            // 2. Rendering
+            if (filteredProducts.length === 0) {
+                noProductsMessage.classList.remove('hidden');
+            } else {
+                noProductsMessage.classList.add('hidden');
+                filteredProducts.forEach(product => {
+                    productsList.appendChild(createProductCard(product));
+                });
+            }
+        }
+
+        // --- EVENT HANDLERS ---
+
+        // Opens the Add/Edit Modal
+        addBtn.addEventListener('click', () => {
+            productModal.classList.remove('hidden');
+            modalTitle.textContent = 'Add Product';
+            productForm.reset();
+            productIdInput.value = '';
+            resetImagePreview();
+        });
+
+        // Closes the Add/Edit Modal
+        const closeProductModal = () => {
+            productModal.classList.add('hidden');
+            // Ensure the form is fully reset on close
+            productForm.reset();
+            productIdInput.value = '';
+            resetImagePreview();
+        };
+
+        closeModal.addEventListener('click', closeProductModal);
+        cancelBtn.addEventListener('click', closeProductModal);
+
+        // Handles image upload preview using Base64
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // Update image preview with the new base64 data URL
+                    populateImagePreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                resetImagePreview();
+            }
+        });
+
+        // Handles click on Edit button
+        function handleEditClick() {
+            const id = parseInt(this.dataset.productId);
+            const product = products.find(p => p.id === id);
+
+            if (product) {
+                // Set modal for editing
+                modalTitle.textContent = 'Edit Product';
+                
+                productIdInput.value = product.id;
+                nameInput.value = product.name;
+                descriptionInput.value = product.description;
+                priceInput.value = product.price;
+                stockInput.value = product.stock;
+                
+                // Set image preview (re-uses current image URL or Base64)
+                if (product.imageUrl) {
+                    populateImagePreview(product.imageUrl);
+                } else {
+                    resetImagePreview();
+                }
+
+                // Show modal
+                productModal.classList.remove('hidden');
+            }
+        }
+
+        // Handles click on Delete button (opens confirmation modal)
+        function handleDeleteClick() {
+            const id = parseInt(this.dataset.productId);
+            productToDelete = products.find(p => p.id === id);
+            
+            if (productToDelete) {
+                confirmProductName.textContent = productToDelete.name;
+                confirmModal.classList.remove('hidden');
+                // Animate content appearance
+                setTimeout(() => confirmModal.querySelector('div').classList.add('scale-100'), 10);
+            }
+        }
+
+        // Confirms and executes deletion
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (productToDelete) {
+                products = products.filter(p => p.id !== productToDelete.id);
+                renderProductList();
+                showNotification(`${productToDelete.name} deleted successfully.`, 'error');
+            }
+            confirmModal.classList.add('hidden');
+            confirmModal.querySelector('div').classList.remove('scale-100');
+            productToDelete = null;
+        });
+
+        // Cancels deletion
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            confirmModal.querySelector('div').classList.remove('scale-100');
+            productToDelete = null;
+        });
+
+
+        // Handles form submission (Add or Edit)
+        productForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const id = productIdInput.value ? parseInt(productIdInput.value) : null;
+            const name = nameInput.value.trim();
+            const description = descriptionInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const stock = parseInt(stockInput.value);
+
+            let imageUrl = '';
+            // If editing, keep the existing image unless a new one is uploaded
+            if (id) {
+                const existingProduct = products.find(p => p.id === id);
+                imageUrl = existingProduct ? existingProduct.imageUrl : '';
+            }
+            
+            // Check for new image upload
+            if (imageInput.files && imageInput.files.length > 0) {
+                // Since we don't have a backend, we'll store the base64 string
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+                    imageUrl = event.target.result;
+                    saveProduct({ id, name, description, price, stock, imageUrl });
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // If no new file, save immediately (preserving old image URL if editing)
+                saveProduct({ id, name, description, price, stock, imageUrl });
+            }
+        });
+
+        // Logic to actually save the product data
+        function saveProduct(productData) {
+            const { id, name, description, price, stock, imageUrl } = productData;
+
+            if (id) {
+                // Update existing product
+                const index = products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    products[index] = { id, name, description, price, stock, imageUrl };
+                    showNotification('Product updated successfully!');
+                }
+            } else {
+                // Add new product
+                const newProduct = {
+                    id: nextProductId++,
+                    name,
+                    description,
+                    price,
+                    stock,
+                    imageUrl: imageUrl || `https://placehold.co/80x80/e5e7eb/7b7b7b?text=${name.charAt(0)}`,
+                };
+                products.push(newProduct);
+                showNotification('Product added successfully!');
+            }
+            
+            closeProductModal();
+            renderProductList();
+        }
+
+        // Handle search input (real-time filtering)
+        searchInput.addEventListener('input', renderProductList);
+
+        // Handle category filtering
+        filterButtons.addEventListener('click', (e) => {
+            const filterBtn = e.target.closest('.filter-btn');
+            if (filterBtn) {
+                // Update active button classes
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('bg-green-600', 'text-white', 'shadow-sm');
+                    btn.classList.add('bg-gray-100', 'text-gray-600');
+                });
+                filterBtn.classList.remove('bg-gray-100', 'text-gray-600');
+                filterBtn.classList.add('bg-green-600', 'text-white', 'shadow-sm');
+
+                currentFilter = filterBtn.dataset.filter;
+                renderProductList();
+            }
+        });
+
+        // Initial render when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProductList();
+        });
+
+    </script>
+</body>
+</html>
